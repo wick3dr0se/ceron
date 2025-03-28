@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 
-#[derive(Copy, Clone, Pod, Zeroable)]
 #[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Vertex {
     position: [f32; 2],
     color: [f32; 4],
@@ -12,42 +12,18 @@ impl Vertex {
         0 => Float32x2,  // position
         1 => Float32x4   // color
     ];
+
+    const fn new(x: f32, y: f32, r: f32, g: f32, b: f32, a: f32) -> Self {
+        Vertex {
+            position: [x, y],
+            color: [r, g, b, a],
+        }
+    }
 }
 
-pub const TRIANGLE_VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [-0.5, -0.5],      // bottom left
-        color: [1.0, 0.0, 0.0, 1.0], // red
-    },
-    Vertex {
-        position: [0.5, -0.5],       // bottom right
-        color: [0.0, 1.0, 0.0, 1.0], // green
-    },
-    Vertex {
-        position: [0.0, 0.5],        // top center
-        color: [0.0, 0.0, 1.0, 1.0], // blue
-    },
+pub const VERTICES: &[Vertex] = &[
+    Vertex::new(-0.5, -0.5, 1.0, 0.0, 0.0, 1.0), // bottom left/red
+    Vertex::new(0.5, -0.5, 0.0, 1.0, 0.0, 1.0),  // bottom right/green
+    Vertex::new(0.0, 0.5, 0.0, 0.0, 1.0, 1.0),   // top center/blue
 ];
-
-pub const TRIANGLE_INDICES: &[u16] = &[0, 1, 2];
-
-pub const QUAD_VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [-0.5, -0.5],      // bottom left
-        color: [1.0, 0.0, 0.0, 1.0], // red
-    },
-    Vertex {
-        position: [0.5, -0.5],       // bottom right
-        color: [0.0, 1.0, 0.0, 1.0], // green
-    },
-    Vertex {
-        position: [0.5, 0.5],        // top right
-        color: [0.0, 0.0, 1.0, 1.0], // blue
-    },
-    Vertex {
-        position: [-0.5, 0.5],       // top left
-        color: [1.0, 1.0, 0.0, 1.0], // yellow
-    },
-];
-
-pub const QUAD_INDICES: &[u16] = &[0, 1, 2, 0, 2, 3];
+pub const INDICES: &[u16] = &[0, 1, 2];

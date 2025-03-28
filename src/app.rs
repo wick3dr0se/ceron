@@ -1,69 +1,70 @@
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
-    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
-    window::Window,
+    event_loop::{ActiveEventLoop, EventLoop},
+    window::{Window, WindowId},
 };
 
-use crate::renderer::{Renderer, context::RenderContext};
+use crate::renderer::Renderer;
 
-pub use wgpu::Color;
-
-pub trait AppHandler {
-    fn update(&mut self, ctx: &mut RenderContext);
-}
-
-pub struct App<H: AppHandler> {
+pub struct App<R: Renderer> {
     window: Option<Window>,
-    renderer: Option<Renderer>,
-    handler: H,
+    renderer: Option<R>,
+    constructor: Option<Box<dyn FnOnce(Window) -> R>>,
 }
 
-impl<H: AppHandler> ApplicationHandler for App<H> {
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window = event_loop
-            .create_window(Window::default_attributes().with_title("Ceron"))
-            .unwrap();
-
-        self.renderer = Some(Renderer::new(&window));
-
-        self.window = Some(window);
-        self.window.as_ref().unwrap().request_redraw();
+impl<R: Renderer> App<R> {
+    pub fn new(constructor: impl FnOnce(Window) -> R + 'static) -> Self {
+        Self {
+            window: None,
+            renderer: None,
+            constructor: Some(Box::new(constructor)),
+        }
     }
 
+    pub fn run(&mut self) {
+        let event_loop = EventLoop::new().unwrap();
+
+        event_loop.run_app(self).unwrap();
+    }
+}
+
+impl<R: Renderer> ApplicationHandler for App<R> {
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,
-        _id: winit::window::WindowId,
+        _window_id: WindowId,
         event: WindowEvent,
     ) {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
-            WindowEvent::RedrawRequested => {
-                if let (Some(renderer), Some(window)) = (&mut self.renderer, &self.window) {
-                    renderer.render(window, |ctx| self.handler.update(ctx));
+            WindowEvent::Resized(size) => {
+                if let (Some(window), Some(renderer)) = (&self.window, &mut self.renderer) {
+                    renderer.resize(size);
+                    window.request_redraw();
                 }
             }
-            WindowEvent::Resized(size) => {
-                if let Some(renderer) = &mut self.renderer {
-                    renderer.resize(size);
+            WindowEvent::RedrawRequested => {
+                if let Some(renderer) = &self.renderer {
+                    renderer.render_frame();
                 }
-                self.window.as_ref().unwrap().request_redraw();
             }
             _ => (),
         }
     }
-}
 
-pub fn run<H: AppHandler + 'static>(handler: H) {
-    let event_loop = EventLoop::new().unwrap();
-    event_loop.set_control_flow(ControlFlow::Wait);
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        let window = event_loop
+            .create_window(Window::default_attributes())
+            .unwrap();
 
-    let mut app = App {
-        window: None,
-        renderer: None,
-        handler,
-    };
+        window.request_redraw();
 
-    event_loop.run_app(&mut app).unwrap();
+        self.window = Some(window);
+
+        if let Some(window) = self.window.take() {
+            let constructor = self.constructor.take().unwrap();
+            self.renderer = Some(constructor(window));
+        }
+    }
 }
