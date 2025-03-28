@@ -45,7 +45,7 @@ impl<R: Renderer> ApplicationHandler for App<R> {
                 }
             }
             WindowEvent::RedrawRequested => {
-                if let Some(renderer) = &self.renderer {
+                if let Some(renderer) = &mut self.renderer {
                     renderer.render_frame();
                 }
             }
@@ -57,8 +57,6 @@ impl<R: Renderer> ApplicationHandler for App<R> {
         let window = event_loop
             .create_window(Window::default_attributes())
             .unwrap();
-
-        window.request_redraw();
 
         self.window = Some(window);
 

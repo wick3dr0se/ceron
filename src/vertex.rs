@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use wgpu::Color;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -13,17 +14,17 @@ impl Vertex {
         1 => Float32x4   // color
     ];
 
-    const fn new(x: f32, y: f32, r: f32, g: f32, b: f32, a: f32) -> Self {
+    pub const fn new(x: f32, y: f32, color: Color) -> Self {
         Vertex {
             position: [x, y],
-            color: [r, g, b, a],
+            color: [
+                color.r as f32,
+                color.g as f32,
+                color.b as f32,
+                color.a as f32,
+            ],
         }
     }
 }
 
-pub const VERTICES: &[Vertex] = &[
-    Vertex::new(-0.5, -0.5, 1.0, 0.0, 0.0, 1.0), // bottom left/red
-    Vertex::new(0.5, -0.5, 0.0, 1.0, 0.0, 1.0),  // bottom right/green
-    Vertex::new(0.0, 0.5, 0.0, 0.0, 1.0, 1.0),   // top center/blue
-];
-pub const INDICES: &[u16] = &[0, 1, 2];
+pub(crate) const TRI_INDICES: &[u16] = &[0, 1, 2];

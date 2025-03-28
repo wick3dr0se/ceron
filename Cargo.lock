@@ -225,6 +225,7 @@ name = "ceron"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "glam",
  "pollster",
  "wgpu",
  "winit",
@@ -445,6 +446,12 @@ dependencies = [
  "log",
  "xml-rs",
 ]
+
+[[package]]
+name = "glam"
+version = "0.30.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf3aa70d918d2b234126ff4f850f628f172542bf0603ded26b8ee36e5e22d5f9"
 
 [[package]]
 name = "glow"

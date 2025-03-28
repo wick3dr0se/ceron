@@ -1,30 +1,13 @@
 use wgpu::*;
 
-use crate::vertex::{INDICES, VERTICES, Vertex};
+use crate::vertex::Vertex;
 
 use super::{context::RenderContext, shader::Shader};
 
 pub(crate) struct Pipeline;
 
 impl Pipeline {
-    pub(crate) fn new(ctx: &RenderContext) -> (RenderPipeline, Buffer, Buffer) {
-        let vertex_buffer = util::DeviceExt::create_buffer_init(
-            &ctx.device,
-            &util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(VERTICES),
-                usage: BufferUsages::VERTEX,
-            },
-        );
-        let index_buffer = util::DeviceExt::create_buffer_init(
-            &ctx.device,
-            &util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(INDICES),
-                usage: BufferUsages::INDEX,
-            },
-        );
-
+    pub(crate) fn new(ctx: &RenderContext) -> RenderPipeline {
         let pipeline_layout = ctx
             .device
             .create_pipeline_layout(&PipelineLayoutDescriptor {
@@ -38,8 +21,8 @@ impl Pipeline {
                 label: Some("Render Pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex: VertexState {
-                    module: &Shader::load(&ctx, "vertex.wgsl"),
-                    entry_point: Some("main"),
+                    module: &Shader::load(&ctx, "position_color.wgsl"),
+                    entry_point: Some("vertex_main"),
                     buffers: &[VertexBufferLayout {
                         array_stride: std::mem::size_of::<Vertex>() as BufferAddress,
                         step_mode: VertexStepMode::Vertex,
@@ -49,8 +32,8 @@ impl Pipeline {
                 },
                 cache: None,
                 fragment: Some(FragmentState {
-                    module: &Shader::load(&ctx, "fragment.wgsl"),
-                    entry_point: Some("main"),
+                    module: &Shader::load(&ctx, "position_color.wgsl"),
+                    entry_point: Some("fragment_main"),
                     targets: &[Some(ColorTargetState {
                         format: ctx.config.format,
                         blend: Some(BlendState::REPLACE),
@@ -64,6 +47,6 @@ impl Pipeline {
                 multiview: None,
             });
 
-        (pipeline, vertex_buffer, index_buffer)
+        pipeline
     }
 }
