@@ -38,24 +38,28 @@ impl GpuRenderer {
         }
     }
 
+    pub fn surface_size(&self) -> Vec2 {
+        vec2(self.ctx.config.width as f32, self.ctx.config.height as f32)
+    }
+
     pub fn set_background(&mut self, color: Color) {
         self.background_color = color;
     }
 
     pub fn draw_line(&mut self, start: Vec2, end: Vec2, width: f32, color: Color) {
-        let window_size = vec2(self.ctx.config.width as f32, self.ctx.config.height as f32);
+        let surface_size = self.surface_size();
 
         let start_ndc = Vec2::new(
-            (start.x / window_size.x) * 2.0 - 1.0,
-            -(start.y / window_size.y) * 2.0 + 1.0,
+            (start.x / surface_size.x) * 2.0 - 1.0,
+            -(start.y / surface_size.y) * 2.0 + 1.0,
         );
         let end_ndc = Vec2::new(
-            (end.x / window_size.x) * 2.0 - 1.0,
-            -(end.y / window_size.y) * 2.0 + 1.0,
+            (end.x / surface_size.x) * 2.0 - 1.0,
+            -(end.y / surface_size.y) * 2.0 + 1.0,
         );
 
         let dir = (end_ndc - start_ndc).normalize();
-        let perp = vec2(-dir.y, dir.x) * (width / window_size.x * 2.0);
+        let perp = vec2(-dir.y, dir.x) * (width / surface_size.x * 2.0);
 
         let vertices = vec![
             Vertex::new(start_ndc.x - perp.x, start_ndc.y - perp.y, color),
