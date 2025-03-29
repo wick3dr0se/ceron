@@ -9,10 +9,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 use context::RenderContext;
 use pipeline::Pipeline;
 
-use crate::{
-    renderer::Renderer,
-    vertex::{TRI_INDICES, Vertex},
-};
+use crate::{renderer::Renderer, vertex::Vertex};
 
 pub use wgpu::Color;
 
@@ -45,20 +42,98 @@ impl GpuRenderer {
         self.background_color = color;
     }
 
+    pub fn draw_line(&mut self, start: Vec2, end: Vec2, width: f32, color: Color) {
+        let window_size = vec2(self.ctx.config.width as f32, self.ctx.config.height as f32);
+
+        let start_ndc = Vec2::new(
+            (start.x / window_size.x) * 2.0 - 1.0,
+            -(start.y / window_size.y) * 2.0 + 1.0,
+        );
+        let end_ndc = Vec2::new(
+            (end.x / window_size.x) * 2.0 - 1.0,
+            -(end.y / window_size.y) * 2.0 + 1.0,
+        );
+
+        let dir = (end_ndc - start_ndc).normalize();
+        let perp = vec2(-dir.y, dir.x) * (width / window_size.x * 2.0);
+
+        let vertices = vec![
+            Vertex::new(start_ndc.x - perp.x, start_ndc.y - perp.y, color),
+            Vertex::new(start_ndc.x + perp.x, start_ndc.y + perp.y, color),
+            Vertex::new(end_ndc.x - perp.x, end_ndc.y - perp.y, color),
+            Vertex::new(end_ndc.x + perp.x, end_ndc.y + perp.y, color),
+        ];
+        let indices = vec![0, 1, 2, 1, 3, 2];
+
+        self.draw_commands.push(DrawCommand { vertices, indices });
+    }
+
     pub fn draw_triangle(&mut self, pos: Vec2, size: f32, color: Color) {
         let window_size = vec2(self.ctx.config.width as f32, self.ctx.config.height as f32);
         let pos_ndc = Vec2::new(
             (pos.x / window_size.x) * 2.0 - 1.0,
             -(pos.y / window_size.y) * 2.0 + 1.0,
         );
-        let size_ndc = size / window_size.x as f32 * 2.0;
+        let size_ndc = size / window_size.x as f32;
 
         let vertices = vec![
             Vertex::new(pos_ndc.x, pos_ndc.y + size_ndc, color),
             Vertex::new(pos_ndc.x - size_ndc, pos_ndc.y - size_ndc, color),
             Vertex::new(pos_ndc.x + size_ndc, pos_ndc.y - size_ndc, color),
         ];
-        let indices = TRI_INDICES.into();
+        let indices = vec![0, 1, 2];
+
+        self.draw_commands.push(DrawCommand { vertices, indices });
+    }
+
+    pub fn draw_rectangle(&mut self, pos: Vec2, size: Vec2, color: Color) {
+        let window_size = vec2(self.ctx.config.width as f32, self.ctx.config.height as f32);
+        let pos_ndc = Vec2::new(
+            (pos.x / window_size.x) * 2.0 - 1.0,
+            -(pos.y / window_size.y) * 2.0 + 1.0,
+        );
+        let size_ndc = (size / window_size) * 2.0;
+        let half = size_ndc * 0.5;
+
+        let vertices = vec![
+            Vertex::new(pos_ndc.x - half.x, pos_ndc.y + half.y, color),
+            Vertex::new(pos_ndc.x + half.x, pos_ndc.y + half.y, color),
+            Vertex::new(pos_ndc.x - half.x, pos_ndc.y - half.y, color),
+            Vertex::new(pos_ndc.x + half.x, pos_ndc.y - half.y, color),
+        ];
+        let indices = vec![0, 1, 2, 1, 3, 2];
+
+        self.draw_commands.push(DrawCommand { vertices, indices });
+    }
+
+    pub fn draw_circle(&mut self, pos: Vec2, radius: f32, color: Color, segments: u16) {
+        let window_size = vec2(self.ctx.config.width as f32, self.ctx.config.height as f32);
+
+        let pos_ndc = Vec2::new(
+            (pos.x / window_size.x) * 2.0 - 1.0,
+            -(pos.y / window_size.y) * 2.0 + 1.0,
+        );
+        let radius_ndc = radius / window_size.x;
+
+        let mut vertices = vec![Vertex::new(pos_ndc.x, pos_ndc.y, color)];
+        let mut indices = Vec::new();
+
+        for i in 0..=segments {
+            let theta = (i as f32 / segments as f32) * std::f32::consts::TAU;
+            let x = pos_ndc.x + radius_ndc * theta.cos();
+            let y = pos_ndc.y + radius_ndc * theta.sin();
+            vertices.push(Vertex::new(x, y, color));
+
+            if i > 0 {
+                indices.push(0);
+                indices.push(i);
+                indices.push(i + 1);
+            }
+        }
+
+        indices.push(0);
+        indices.push(segments.try_into().unwrap());
+        indices.push(1);
 
         self.draw_commands.push(DrawCommand { vertices, indices });
     }
@@ -114,7 +189,7 @@ impl Renderer for GpuRenderer {
 
                 pass.set_vertex_buffer(0, vertex_buffer.slice(..));
                 pass.set_index_buffer(index_buffer.slice(..), IndexFormat::Uint16);
-                pass.draw_indexed(0..3, 0, 0..1);
+                pass.draw_indexed(0..cmd.indices.len() as u32, 0, 0..1);
             }
         }
 

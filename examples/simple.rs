@@ -15,7 +15,11 @@ fn main() {
 
         renderer.draw_triangle(pos, size, Color::WHITE);
         renderer.draw_triangle(pos * 2.0, size, Color::BLACK);
-        renderer.draw_triangle(pos * 3.0, size, Color::WHITE);
+        renderer.draw_rectangle(pos * 3.0, pos, Color::WHITE);
+        renderer.draw_rectangle(pos * 4.0, pos, Color::BLACK);
+        renderer.draw_line(pos * 4.0, pos * 5.0, 2.0, Color::RED);
+        renderer.draw_circle(pos * 5.0, size, Color::BLUE, 20);
+        renderer.draw_circle(pos * 10.0, size * 8.0, Color::RED, 100);
 
         renderer
     });

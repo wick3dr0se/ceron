@@ -26,5 +26,3 @@ impl Vertex {
         }
     }
 }
-
-pub(crate) const TRI_INDICES: &[u16] = &[0, 1, 2];
